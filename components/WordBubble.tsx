@@ -1,0 +1,74 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { WordBubble as WordBubbleType } from '@/types/word';
+
+interface WordBubbleProps {
+  bubble: WordBubbleType;
+  isCenter?: boolean;
+  onClick?: () => void;
+  scale?: number;
+}
+
+const getColorClasses = (color: string, isCenter: boolean) => {
+  const baseClasses = 'backdrop-blur-md border transition-all duration-300 cursor-pointer';
+
+  if (isCenter) {
+    return `${baseClasses} bg-gradient-to-br from-blue-500/30 to-purple-600/30 border-blue-400/50 shadow-xl shadow-blue-500/20`;
+  }
+
+  switch (color) {
+    case 'yellow':
+      return `${baseClasses} bg-yellow-400/20 border-yellow-400/40 hover:bg-yellow-400/30`;
+    case 'orange':
+      return `${baseClasses} bg-orange-500/20 border-orange-500/40 hover:bg-orange-500/30`;
+    case 'red':
+      return `${baseClasses} bg-red-500/20 border-red-500/40 hover:bg-red-500/30`;
+    case 'dark':
+      return `${baseClasses} bg-gray-900/40 border-gray-700/60 hover:bg-gray-900/50`;
+    default:
+      return `${baseClasses} bg-white/10 border-white/20 hover:bg-white/20`;
+  }
+};
+
+const getTextColor = (color: string, isCenter: boolean) => {
+  if (isCenter) return 'text-white font-bold';
+  return color === 'dark' ? 'text-gray-200' : 'text-white';
+};
+
+export default function WordBubble({ bubble, isCenter = false, onClick, scale = 1 }: WordBubbleProps) {
+  const size = isCenter ? 120 : 80 + (bubble.similarity * 40);
+  const fontSize = isCenter ? 'text-xl' : bubble.similarity > 0.7 ? 'text-base' : 'text-sm';
+
+  return (
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: scale, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      whileHover={{ scale: scale * 1.1 }}
+      whileTap={{ scale: scale * 0.95 }}
+      onClick={onClick}
+      className={`
+        absolute rounded-full flex items-center justify-center text-center p-4
+        ${getColorClasses(bubble.color, isCenter)}
+        ${getTextColor(bubble.color, isCenter)}
+        ${fontSize}
+      `}
+      style={{
+        width: size,
+        height: size,
+        left: `calc(50% + ${bubble.position.x}px - ${size / 2}px)`,
+        top: `calc(50% + ${bubble.position.y}px - ${size / 2}px)`,
+      }}
+    >
+      <div className="select-none">
+        {bubble.word}
+        {isCenter && bubble.attributes.intensity !== undefined && (
+          <div className="text-xs font-normal mt-1 opacity-70">
+            click to explore
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
