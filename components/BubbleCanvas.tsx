@@ -12,15 +12,24 @@ interface BubbleCanvasProps {
   onWordClick?: (word: string) => void;
 }
 
+interface SimulationNode extends d3.SimulationNodeDatum {
+  bubble: WordBubble | CenterWord;
+  radius: number;
+}
+
 export default function BubbleCanvas({ data, onWordClick }: BubbleCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [selectedBubble, setSelectedBubble] = useState<WordBubble | CenterWord | undefined>();
   const [previousSelection, setPreviousSelection] = useState<string | undefined>();
   const [comparisonData, setComparisonData] = useState<ComparisonData | undefined>();
   const [allBubbles, setAllBubbles] = useState<(WordBubble | CenterWord)[]>([]);
+  const simulationRef = useRef<d3.Simulation<SimulationNode, undefined> | null>(null);
 
   useEffect(() => {
-    if (!data) return;
+    if (!data || !canvasRef.current) return;
+
+    const width = canvasRef.current.clientWidth;
+    const height = canvasRef.current.clientHeight;
 
     // Combine all bubbles
     const bubbles: (WordBubble | CenterWord)[] = [
@@ -29,7 +38,74 @@ export default function BubbleCanvas({ data, onWordClick }: BubbleCanvasProps) {
       ...data.antonyms,
     ];
 
-    setAllBubbles(bubbles);
+    // Calculate bubble sizes and create simulation nodes
+    const nodes: SimulationNode[] = bubbles.map((bubble) => {
+      const isCenter = bubble.id === 'center';
+      const baseSize = isCenter ? 60 : 40;
+      const radius = baseSize + (bubble.similarity * 20);
+
+      return {
+        bubble,
+        radius,
+        x: isCenter ? width / 2 : bubble.position.x + width / 2,
+        y: isCenter ? height / 2 : bubble.position.y + height / 2,
+      };
+    });
+
+    // Stop any existing simulation
+    if (simulationRef.current) {
+      simulationRef.current.stop();
+    }
+
+    // Create force simulation
+    const simulation = d3.forceSimulation<SimulationNode>(nodes)
+      .force('charge', d3.forceManyBody().strength(-50))
+      .force('collision', d3.forceCollide<SimulationNode>().radius(d => d.radius + 10).iterations(3))
+      .force('x', d3.forceX<SimulationNode>(width / 2).strength(d => {
+        // Keep center word strongly at center
+        if (d.bubble.id === 'center') return 1;
+        // Pull synonyms toward center based on similarity
+        if (!d.bubble.isAntonym) return 0.05 + (d.bubble.similarity * 0.1);
+        // Push antonyms away from center
+        return -0.05;
+      }))
+      .force('y', d3.forceY<SimulationNode>(height / 2).strength(d => {
+        if (d.bubble.id === 'center') return 1;
+        return 0.1;
+      }))
+      .force('radial', d3.forceRadial<SimulationNode>(
+        d => {
+          if (d.bubble.id === 'center') return 0;
+          // Synonyms orbit at a distance based on similarity (inverse)
+          if (!d.bubble.isAntonym) {
+            return 100 + (1 - d.bubble.similarity) * 150;
+          }
+          // Antonyms orbit at outer edge
+          return 280;
+        },
+        width / 2,
+        height / 2
+      ).strength(0.3))
+      .alphaDecay(0.02)
+      .velocityDecay(0.3);
+
+    // Update positions on each tick
+    simulation.on('tick', () => {
+      const updatedBubbles = nodes.map(node => ({
+        ...node.bubble,
+        position: {
+          x: (node.x || width / 2) - width / 2,
+          y: (node.y || height / 2) - height / 2,
+        },
+      }));
+      setAllBubbles(updatedBubbles);
+    });
+
+    simulationRef.current = simulation;
+
+    return () => {
+      simulation.stop();
+    };
   }, [data]);
 
   const handleBubbleClick = async (bubble: WordBubble | CenterWord) => {
@@ -84,7 +160,7 @@ export default function BubbleCanvas({ data, onWordClick }: BubbleCanvasProps) {
     <>
       <div
         ref={canvasRef}
-        className="relative w-full h-[600px] overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm border border-white/10"
+        className="relative w-full h-[700px] overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm border border-white/10"
       >
         <AnimatePresence>
           {allBubbles.map((bubble) => (

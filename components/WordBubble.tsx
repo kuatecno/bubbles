@@ -37,22 +37,31 @@ const getTextColor = (color: string, isCenter: boolean) => {
 };
 
 export default function WordBubble({ bubble, isCenter = false, onClick, scale = 1 }: WordBubbleProps) {
-  const size = isCenter ? 120 : 80 + (bubble.similarity * 40);
-  const fontSize = isCenter ? 'text-xl' : bubble.similarity > 0.7 ? 'text-base' : 'text-sm';
+  // More conservative sizing to prevent overlaps
+  const size = isCenter ? 110 : 65 + (bubble.similarity * 15);
+  const fontSize = isCenter ? 'text-lg' : bubble.similarity > 0.8 ? 'text-sm' : 'text-xs';
+  const padding = isCenter ? 'p-4' : 'p-2';
 
   return (
     <motion.div
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: scale, opacity: 1 }}
       exit={{ scale: 0, opacity: 0 }}
-      whileHover={{ scale: scale * 1.1 }}
+      transition={{
+        type: "spring",
+        stiffness: 260,
+        damping: 20,
+        delay: bubble.id === 'center' ? 0 : Math.random() * 0.2
+      }}
+      whileHover={{ scale: scale * 1.15, zIndex: 50 }}
       whileTap={{ scale: scale * 0.95 }}
       onClick={onClick}
       className={`
-        absolute rounded-full flex items-center justify-center text-center p-4
+        absolute rounded-full flex items-center justify-center text-center
         ${getColorClasses(bubble.color, isCenter)}
         ${getTextColor(bubble.color, isCenter)}
         ${fontSize}
+        ${padding}
       `}
       style={{
         width: size,
@@ -61,10 +70,10 @@ export default function WordBubble({ bubble, isCenter = false, onClick, scale = 
         top: `calc(50% + ${bubble.position.y}px - ${size / 2}px)`,
       }}
     >
-      <div className="select-none">
+      <div className="select-none leading-tight">
         {bubble.word}
-        {isCenter && bubble.attributes.intensity !== undefined && (
-          <div className="text-xs font-normal mt-1 opacity-70">
+        {isCenter && (
+          <div className="text-[10px] font-normal mt-1 opacity-60">
             click to explore
           </div>
         )}
