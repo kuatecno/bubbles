@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
 Your task is to analyze words and return structured JSON data for visualization.
 
 For each word, provide:
-1. Synonyms with multi-dimensional attributes (intensity, specificity, frequency, emotional valence, formality)
-2. Antonyms
+1. MANY synonyms with varying degrees of similarity - include near-synonyms, related words, and subtle variations
+2. Antonyms and opposite meanings
 3. Translations in specified languages
 4. Usage examples
 5. Color coding based on confusion risk:
@@ -32,7 +32,8 @@ For each word, provide:
    - dark: antonyms
 
 Important positioning guidelines:
-- Distance from center = semantic similarity (0-1)
+- Distance from center = semantic similarity (0-1, where 1.0 is very close, 0.5 is somewhat related)
+- Include words with varying similarity scores (0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5)
 - AI should consider ALL attributes simultaneously for smart positioning
 - Different word types (verbs, nouns, emotions) should cluster differently
 - Provide x,y coordinates that reflect multi-dimensional relationships
@@ -95,11 +96,11 @@ Return JSON in this exact format:
   ]
 }
 
-Provide 8-12 synonyms and 3-5 antonyms. Use smart multi-dimensional positioning.`,
+IMPORTANT: Provide 40-60 synonyms with diverse similarity scores (include very close synonyms, near-synonyms, related words, and loosely related terms). Provide 15-20 antonyms. Be comprehensive and include subtle variations in meaning.`,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 2500,
+      temperature: 0.8,
+      max_tokens: 8000,
     });
 
     const content = completion.choices[0].message.content;

@@ -37,10 +37,10 @@ const getTextColor = (color: string, isCenter: boolean) => {
 };
 
 export default function WordBubble({ bubble, isCenter = false, onClick, scale = 1 }: WordBubbleProps) {
-  // More conservative sizing to prevent overlaps
-  const size = isCenter ? 110 : 65 + (bubble.similarity * 15);
-  const fontSize = isCenter ? 'text-lg' : bubble.similarity > 0.8 ? 'text-sm' : 'text-xs';
-  const padding = isCenter ? 'p-4' : 'p-2';
+  // Smaller sizing for more bubbles
+  const size = isCenter ? 100 : 50 + (bubble.similarity * 12);
+  const fontSize = isCenter ? 'text-base' : bubble.similarity > 0.85 ? 'text-xs' : 'text-[10px]';
+  const padding = isCenter ? 'p-3' : 'p-1.5';
 
   return (
     <motion.div

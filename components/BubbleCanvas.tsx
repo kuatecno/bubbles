@@ -41,8 +41,9 @@ export default function BubbleCanvas({ data, onWordClick }: BubbleCanvasProps) {
     // Calculate bubble sizes and create simulation nodes
     const nodes: SimulationNode[] = bubbles.map((bubble) => {
       const isCenter = bubble.id === 'center';
-      const baseSize = isCenter ? 60 : 40;
-      const radius = baseSize + (bubble.similarity * 20);
+      // Smaller bubbles to accommodate more of them
+      const baseSize = isCenter ? 55 : 30;
+      const radius = baseSize + (bubble.similarity * 12);
 
       return {
         bubble,
@@ -57,37 +58,38 @@ export default function BubbleCanvas({ data, onWordClick }: BubbleCanvasProps) {
       simulationRef.current.stop();
     }
 
-    // Create force simulation
+    // Create force simulation with stronger forces for more bubbles
     const simulation = d3.forceSimulation<SimulationNode>(nodes)
-      .force('charge', d3.forceManyBody().strength(-50))
-      .force('collision', d3.forceCollide<SimulationNode>().radius(d => d.radius + 10).iterations(3))
+      .force('charge', d3.forceManyBody().strength(-80))
+      .force('collision', d3.forceCollide<SimulationNode>().radius(d => d.radius + 8).iterations(4))
       .force('x', d3.forceX<SimulationNode>(width / 2).strength(d => {
         // Keep center word strongly at center
         if (d.bubble.id === 'center') return 1;
         // Pull synonyms toward center based on similarity
-        if (!d.bubble.isAntonym) return 0.05 + (d.bubble.similarity * 0.1);
+        if (!d.bubble.isAntonym) return 0.03 + (d.bubble.similarity * 0.08);
         // Push antonyms away from center
-        return -0.05;
+        return -0.08;
       }))
       .force('y', d3.forceY<SimulationNode>(height / 2).strength(d => {
         if (d.bubble.id === 'center') return 1;
-        return 0.1;
+        return 0.08;
       }))
       .force('radial', d3.forceRadial<SimulationNode>(
         d => {
           if (d.bubble.id === 'center') return 0;
           // Synonyms orbit at a distance based on similarity (inverse)
+          // More granular distances for more bubbles
           if (!d.bubble.isAntonym) {
-            return 100 + (1 - d.bubble.similarity) * 150;
+            return 90 + (1 - d.bubble.similarity) * 200;
           }
-          // Antonyms orbit at outer edge
-          return 280;
+          // Antonyms orbit MUCH further at outer edge
+          return 450;
         },
         width / 2,
         height / 2
-      ).strength(0.3))
-      .alphaDecay(0.02)
-      .velocityDecay(0.3);
+      ).strength(0.4))
+      .alphaDecay(0.015)
+      .velocityDecay(0.35);
 
     // Update positions on each tick
     simulation.on('tick', () => {
@@ -160,7 +162,7 @@ export default function BubbleCanvas({ data, onWordClick }: BubbleCanvasProps) {
     <>
       <div
         ref={canvasRef}
-        className="relative w-full h-[700px] overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm border border-white/10"
+        className="relative w-full h-[900px] overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm border border-white/10"
       >
         <AnimatePresence>
           {allBubbles.map((bubble) => (
